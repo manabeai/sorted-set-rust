@@ -29,7 +29,8 @@ fn main() {
 }
 ```
 
-公開関数には `///` 形式のドキュメントコメントを付けています。
+公開関数には `///` 形式のドキュメントコメントと `# Examples` の使用例を付けています。
+使用例は `cargo test --doc` で実行でき、`cargo doc --no-deps` で生成する HTML にも表示されます。
 
 ## クレートとして導入
 
@@ -70,6 +71,7 @@ assert_eq!(m.count(&2), 1);
 
 ```sh
 cargo test
+cargo test --doc
 python3 tests/standalone.py
 cargo clippy --all-targets -- -D warnings
 cargo run --example basic

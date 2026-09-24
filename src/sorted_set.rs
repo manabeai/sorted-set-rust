@@ -2,6 +2,14 @@
 // Port of https://github.com/tatyam-prime/SortedSet
 
 /// 重複を除く順序付き集合。
+///
+/// # Examples
+///
+/// ```
+/// use sorted_set::SortedSet;
+/// let s: SortedSet<_> = [3, 1, 3].into_iter().collect();
+/// assert_eq!(s.iter().copied().collect::<Vec<_>>(), [1, 3]);
+/// ```
 #[derive(Clone, Debug)]
 pub struct SortedSet<T> {
     buckets: Vec<Vec<T>>,
@@ -10,6 +18,14 @@ pub struct SortedSet<T> {
 
 impl<T: Ord> SortedSet<T> {
     /// 空のコンテナを作ります。O(1)。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s = SortedSet::<i32>::new();
+    /// assert!(s.is_empty());
+    /// ```
     pub fn new() -> Self {
         Self {
             buckets: Vec::new(),
@@ -18,26 +34,72 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// 格納している要素数を返します。重複も数えます。O(1)。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.len(), 3);
+    /// ```
     pub fn len(&self) -> usize {
         self.len
     }
 
     /// 要素が存在しない場合に `true` を返します。O(1)。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s = SortedSet::<i32>::new();
+    /// assert!(s.is_empty());
+    /// s.add(1);
+    /// assert!(!s.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.len == 0
     }
 
     /// 内部バケットの読み取り専用ビューを返します。空のバケットは含みません。O(1)。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert!(s.buckets().iter().all(|bucket| !bucket.is_empty()));
+    /// assert_eq!(s.buckets().iter().flatten().copied().collect::<Vec<_>>(), [1, 3, 5]);
+    /// ```
     pub fn buckets(&self) -> &[Vec<T>] {
         &self.buckets
     }
 
     /// 比較順序に沿った読み取り専用の双方向イテレータを返します。`rev()` で逆順に走査できます。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.iter().copied().collect::<Vec<_>>(), [1, 3, 5]);
+    /// assert_eq!(s.iter().rev().copied().collect::<Vec<_>>(), [5, 3, 1]);
+    /// ```
     pub fn iter(&self) -> impl DoubleEndedIterator<Item = &T> {
         self.buckets.iter().flatten()
     }
 
     /// すべての要素を削除して空にします。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// s.clear();
+    /// assert!(s.is_empty());
+    /// assert!(s.buckets().is_empty());
+    /// ```
     pub fn clear(&mut self) {
         self.buckets.clear();
         self.len = 0;
@@ -63,6 +125,16 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `index` 番目の要素を参照します。負数は末尾から数え、範囲外なら `None` を返します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.get(0), Some(&1));
+    /// assert_eq!(s.get(-1), Some(&5));
+    /// assert_eq!(s.get(3), None);
+    /// ```
     pub fn get(&self, index: isize) -> Option<&T> {
         let (b, i) = self.locate(index)?;
         Some(&self.buckets[b][i])
@@ -100,12 +172,32 @@ impl<T: Ord> SortedSet<T> {
 
     /// `index` 番目を削除し、値の所有権を返します。負数は末尾基準です。
     /// 範囲外なら変更せず `None` を返します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.pop(-1), Some(5));
+    /// assert_eq!(s.pop(0), Some(1));
+    /// assert_eq!(s.pop(9), None);
+    /// assert_eq!(s.len(), 1);
+    /// ```
     pub fn pop(&mut self, index: isize) -> Option<T> {
         let (b, i) = self.locate(index)?;
         Some(self.remove_at(b, i))
     }
 
     /// 末尾の要素を削除して返します。空なら `None` です。`pop(-1)` と同じです。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s: SortedSet<_> = [5].into_iter().collect();
+    /// assert_eq!(s.pop_last(), Some(5));
+    /// assert_eq!(s.pop_last(), None);
+    /// ```
     pub fn pop_last(&mut self) -> Option<T> {
         self.pop(-1)
     }
@@ -123,12 +215,31 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// 指定した値が存在すれば `true` を返します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert!(s.contains(&3));
+    /// assert!(!s.contains(&2));
+    /// ```
     pub fn contains(&self, x: &T) -> bool {
         self.position(x)
             .is_some_and(|(b, i)| self.buckets[b].get(i) == Some(x))
     }
 
     /// `x` を比較順序に従って挿入します。集合では既存なら `false`、新規なら `true`。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s = SortedSet::new();
+    /// assert!(s.add(3));
+    /// assert!(!s.add(3));
+    /// assert_eq!(s.len(), 1);
+    /// ```
     pub fn add(&mut self, x: T) -> bool {
         if let Some((b, i)) = self.position(&x) {
             if self.buckets[b].get(i) == Some(&x) {
@@ -142,6 +253,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` を 1 個だけ削除します。削除できれば `true`、存在しなければ `false` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert!(s.discard(&3));
+    /// assert!(!s.discard(&3));
+    /// ```
     pub fn discard(&mut self, x: &T) -> bool {
         if let Some((b, i)) = self.position(x) {
             if self.buckets[b].get(i) == Some(x) {
@@ -153,6 +273,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` 未満の最大要素への参照を返します。該当要素がなければ `None` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.lt(&3), Some(&1));
+    /// assert_eq!(s.lt(&1), None);
+    /// ```
     pub fn lt(&self, x: &T) -> Option<&T> {
         for a in self.buckets.iter().rev() {
             if &a[0] < x {
@@ -163,6 +292,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` 以下の最大要素への参照を返します。該当要素がなければ `None` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.le(&3), Some(&3));
+    /// assert_eq!(s.le(&0), None);
+    /// ```
     pub fn le(&self, x: &T) -> Option<&T> {
         for a in self.buckets.iter().rev() {
             if &a[0] <= x {
@@ -173,6 +311,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` より大きい最小要素への参照を返します。該当要素がなければ `None` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.gt(&3), Some(&5));
+    /// assert_eq!(s.gt(&5), None);
+    /// ```
     pub fn gt(&self, x: &T) -> Option<&T> {
         for a in &self.buckets {
             if a.last().unwrap() > x {
@@ -183,6 +330,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` 以上の最小要素への参照を返します。該当要素がなければ `None` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.ge(&3), Some(&3));
+    /// assert_eq!(s.ge(&6), None);
+    /// ```
     pub fn ge(&self, x: &T) -> Option<&T> {
         for a in &self.buckets {
             if a.last().unwrap() >= x {
@@ -193,6 +349,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` 未満の要素数を返します。`x` 自身が存在しなくても利用できます。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.index(&3), 1);
+    /// assert_eq!(s.index(&4), 2);
+    /// ```
     pub fn index(&self, x: &T) -> usize {
         let mut n = 0;
         for a in &self.buckets {
@@ -205,6 +370,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// `x` 以下の要素数を返します。`x` 自身が存在しなくても利用できます。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s.index_right(&3), 2);
+    /// assert_eq!(s.index_right(&4), 2);
+    /// ```
     pub fn index_right(&self, x: &T) -> usize {
         let mut n = 0;
         for a in &self.buckets {
@@ -217,6 +391,15 @@ impl<T: Ord> SortedSet<T> {
     }
 
     /// 指定した値の出現回数を返します。存在しなければ `0` です。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 3].into_iter().collect();
+    /// assert_eq!(s.count(&3), 1);
+    /// assert_eq!(s.count(&2), 0);
+    /// ```
     pub fn count(&self, x: &T) -> usize {
         self.index_right(x) - self.index(x)
     }
@@ -224,6 +407,14 @@ impl<T: Ord> SortedSet<T> {
 
 impl<T: Ord> Default for SortedSet<T> {
     /// 空のコンテナを作ります。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s = SortedSet::<i32>::default();
+    /// assert!(s.is_empty());
+    /// ```
     fn default() -> Self {
         Self::new()
     }
@@ -231,6 +422,14 @@ impl<T: Ord> Default for SortedSet<T> {
 
 impl<T: Ord> std::iter::FromIterator<T> for SortedSet<T> {
     /// 入力を比較順序で構築します。ソート済みなら O(N)、それ以外は O(N log N)。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [3, 1, 3].into_iter().collect();
+    /// assert_eq!(s.iter().copied().collect::<Vec<_>>(), [1, 3]);
+    /// ```
     fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
         let mut values: Vec<T> = iter.into_iter().collect();
 
@@ -258,6 +457,15 @@ impl<T: Ord> std::iter::FromIterator<T> for SortedSet<T> {
 
 impl<T: Ord> Extend<T> for SortedSet<T> {
     /// 各値を順に追加します。集合では重複を追加しません。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let mut s: SortedSet<_> = [1].into_iter().collect();
+    /// s.extend([3, 3]);
+    /// assert_eq!(s.iter().copied().collect::<Vec<_>>(), [1, 3]);
+    /// ```
     fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) {
         for x in iter {
             self.add(x);
@@ -267,6 +475,15 @@ impl<T: Ord> Extend<T> for SortedSet<T> {
 
 impl<T: PartialEq> PartialEq for SortedSet<T> {
     /// バケット構成によらず、要素の並びが等しいか比較します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// let copy = s.clone();
+    /// assert_eq!(s, copy);
+    /// ```
     fn eq(&self, other: &Self) -> bool {
         self.len == other.len
             && self
@@ -283,6 +500,16 @@ impl<'a, T> IntoIterator for &'a SortedSet<T> {
     type Item = &'a T;
     type IntoIter = std::iter::Flatten<std::slice::Iter<'a, Vec<T>>>;
     /// コンテナを消費せず、要素参照の双方向イテレータを返します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// let values: Vec<_> = (&s).into_iter().copied().collect();
+    /// assert_eq!(values, [1, 3, 5]);
+    /// assert_eq!(s.len(), 3);
+    /// ```
     fn into_iter(self) -> Self::IntoIter {
         self.buckets.iter().flatten()
     }
@@ -294,6 +521,21 @@ impl<T: Ord> std::ops::Index<isize> for SortedSet<T> {
     ///
     /// # Panics
     /// 範囲外の添字を渡すと panic します。
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use sorted_set::SortedSet;
+    /// let s: SortedSet<_> = [1, 3, 5].into_iter().collect();
+    /// assert_eq!(s[0], 1);
+    /// assert_eq!(s[-1], 5);
+    /// ```
+    ///
+    /// ```should_panic
+    /// use sorted_set::SortedSet;
+    /// let s = SortedSet::<i32>::new();
+    /// let _ = s[0]; // 空のコンテナへの添字アクセスは panic します。
+    /// ```
     fn index(&self, index: isize) -> &T {
         self.get(index).expect("SortedSet index out of bounds")
     }
