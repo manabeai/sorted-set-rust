@@ -1,4 +1,4 @@
-use sorted_set::{BucketList, SortedCollection, SortedMultiset, SortedSet};
+use sorted_set::{BucketList, SortedMultiset, SortedSet};
 
 fn next(seed: &mut u64) -> u64 {
     *seed ^= *seed << 13;
@@ -7,87 +7,89 @@ fn next(seed: &mut u64) -> u64 {
     *seed
 }
 
-fn check<const M: bool>(s: &SortedCollection<i32, M>, v: &[i32], x: i32) {
-    assert_eq!(s.len(), v.len());
-    assert_eq!(s.iter().copied().collect::<Vec<_>>(), v);
-    assert_eq!(
-        s.iter().rev().copied().collect::<Vec<_>>(),
-        v.iter().rev().copied().collect::<Vec<_>>()
-    );
-    assert!(s.buckets().iter().all(|a| !a.is_empty()));
-    let l = v.partition_point(|y| *y < x);
-    let r = v.partition_point(|y| *y <= x);
-    assert_eq!(s.index(&x), l);
-    assert_eq!(s.index_right(&x), r);
-    assert_eq!(s.count(&x), r - l);
-    assert_eq!(s.contains(&x), l != r);
-    assert_eq!(s.lt(&x), l.checked_sub(1).and_then(|i| v.get(i)));
-    assert_eq!(s.le(&x), r.checked_sub(1).and_then(|i| v.get(i)));
-    assert_eq!(s.ge(&x), v.get(l));
-    assert_eq!(s.gt(&x), v.get(r));
-    assert_eq!(s.get(-1), v.last());
-    assert_eq!(s.get(0), v.first());
-    assert_eq!(s.get(v.len() as isize), None);
-    assert_eq!(s.get(-(v.len() as isize) - 1), None);
-    assert_eq!(s.get(isize::MIN), None);
-    assert_eq!(s.get(isize::MAX), None);
-}
+macro_rules! sorted_tests {
+    ($module:ident, $kind:ident, $multi:expr) => {
+        mod $module {
+            use super::*;
+            fn check(s: &$kind<i32>, v: &[i32], x: i32) {
+                assert_eq!(s.len(), v.len());
+                assert_eq!(s.iter().copied().collect::<Vec<_>>(), v);
+                assert_eq!(
+                    s.iter().rev().copied().collect::<Vec<_>>(),
+                    v.iter().rev().copied().collect::<Vec<_>>()
+                );
+                assert!(s.buckets().iter().all(|a| !a.is_empty()));
+                let l = v.partition_point(|y| *y < x);
+                let r = v.partition_point(|y| *y <= x);
+                assert_eq!(s.index(&x), l);
+                assert_eq!(s.index_right(&x), r);
+                assert_eq!(s.count(&x), r - l);
+                assert_eq!(s.contains(&x), l != r);
+                assert_eq!(s.lt(&x), l.checked_sub(1).and_then(|i| v.get(i)));
+                assert_eq!(s.le(&x), r.checked_sub(1).and_then(|i| v.get(i)));
+                assert_eq!(s.ge(&x), v.get(l));
+                assert_eq!(s.gt(&x), v.get(r));
+                assert_eq!(s.get(-1), v.last());
+                assert_eq!(s.get(0), v.first());
+                assert_eq!(s.get(v.len() as isize), None);
+                assert_eq!(s.get(-(v.len() as isize) - 1), None);
+                assert_eq!(s.get(isize::MIN), None);
+                assert_eq!(s.get(isize::MAX), None);
+            }
 
-fn randomized<const M: bool>() {
-    let mut s = SortedCollection::<i32, M>::new();
-    let mut v = Vec::new();
-    let mut seed = 812;
-    for _ in 0..15000 {
-        let x = (next(&mut seed) % 401) as i32 - 200;
-        match next(&mut seed) % 5 {
-            0..=2 => {
-                let i = v.partition_point(|y| *y < x);
-                let added = M || v.get(i) != Some(&x);
-                assert_eq!(s.add(x), added);
-                if added {
-                    v.insert(i, x);
+            #[test]
+            fn randomized() {
+                let mut s = $kind::<i32>::new();
+                let mut v = Vec::new();
+                let mut seed = 812;
+                for _ in 0..15000 {
+                    let x = (next(&mut seed) % 401) as i32 - 200;
+                    match next(&mut seed) % 5 {
+                        0..=2 => {
+                            let i = v.partition_point(|y| *y < x);
+                            let added = $multi || v.get(i) != Some(&x);
+                            assert_eq!(s.add(x), added);
+                            if added {
+                                v.insert(i, x);
+                            }
+                        }
+                        3 => {
+                            let i = v.partition_point(|y| *y < x);
+                            let found = v.get(i) == Some(&x);
+                            assert_eq!(s.discard(&x), found);
+                            if found {
+                                v.remove(i);
+                            }
+                        }
+                        _ if !v.is_empty() => {
+                            let i = next(&mut seed) as usize % v.len();
+                            let signed = if next(&mut seed) & 1 == 0 {
+                                i as isize
+                            } else {
+                                i as isize - v.len() as isize
+                            };
+                            assert_eq!(s.get(signed), Some(&v[i]));
+                            assert_eq!(s.pop(signed), Some(v.remove(i)));
+                        }
+                        _ => {
+                            assert_eq!(s.pop_last(), None);
+                        }
+                    }
+                    check(&s, &v, x);
                 }
-            }
-            3 => {
-                let i = v.partition_point(|y| *y < x);
-                let found = v.get(i) == Some(&x);
-                assert_eq!(s.discard(&x), found);
-                if found {
-                    v.remove(i);
+                while !v.is_empty() {
+                    assert_eq!(s.pop(0), Some(v.remove(0)));
                 }
-            }
-            _ if !v.is_empty() => {
-                let i = next(&mut seed) as usize % v.len();
-                let signed = if next(&mut seed) & 1 == 0 {
-                    i as isize
-                } else {
-                    i as isize - v.len() as isize
-                };
-                assert_eq!(s.get(signed), Some(&v[i]));
-                assert_eq!(s.pop(signed), Some(v.remove(i)));
-            }
-            _ => {
-                assert_eq!(s.pop_last(), None);
+                assert!(s.buckets().is_empty());
+                assert!(s.add(7));
+                s.clear();
+                assert!(s.is_empty());
             }
         }
-        check(&s, &v, x);
-    }
-    while !v.is_empty() {
-        assert_eq!(s.pop(0), Some(v.remove(0)));
-    }
-    assert!(s.buckets().is_empty());
-    assert!(s.add(7));
-    s.clear();
-    assert!(s.is_empty());
+    };
 }
-#[test]
-fn set_randomized() {
-    randomized::<false>();
-}
-#[test]
-fn multiset_randomized() {
-    randomized::<true>();
-}
+sorted_tests!(set_tests, SortedSet, false);
+sorted_tests!(multiset_tests, SortedMultiset, true);
 
 #[test]
 fn construction_splits_equality_and_non_clone() {

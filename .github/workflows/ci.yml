@@ -11,6 +11,7 @@ jobs:
       - run: cargo +stable fmt --check
       - run: cargo +stable clippy --all-targets -- -D warnings
       - run: cargo +stable test --all-targets
+      - run: python3 tests/standalone.py
       - run: cargo +stable test --doc
       - run: cargo +stable run --example basic
       - run: cargo +stable doc --no-deps

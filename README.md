@@ -7,7 +7,31 @@
 - `SortedMultiset<T>`: 重複を許す順序付き多重集合
 - `BucketList<T>`: 挿入順を保持するバケット方式のリスト
 
-## 導入
+## コピペで使う
+
+必要な型のファイル全体を、そのまま提出コードのトップレベルへ貼り付けてください。
+標準ライブラリだけで動作し、`lib.rs` や他の実装ファイルは不要です。
+複数の型を使う場合も、それぞれの内容を同じコードに貼り付けられます。
+
+| 型 | 単独で使えるファイル |
+| --- | --- |
+| `SortedSet` | [src/sorted_set.rs](src/sorted_set.rs) |
+| `SortedMultiset` | [src/sorted_multiset.rs](src/sorted_multiset.rs) |
+| `BucketList` | [src/bucket_list.rs](src/bucket_list.rs) |
+
+```rust
+// src/sorted_set.rs の内容をここに貼り付ける
+fn main() {
+    let mut s = SortedSet::new();
+    s.add(3);
+    s.add(1);
+    assert_eq!(s[-1], 3);
+}
+```
+
+公開関数には `///` 形式のドキュメントコメントを付けています。
+
+## クレートとして導入
 
 Rust stable / Edition 2021 を使用します。crates.io には未公開です。
 
@@ -46,6 +70,7 @@ assert_eq!(m.count(&2), 1);
 
 ```sh
 cargo test
+python3 tests/standalone.py
 cargo clippy --all-targets -- -D warnings
 cargo run --example basic
 cargo doc --no-deps

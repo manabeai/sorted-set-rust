@@ -20,8 +20,7 @@ use sorted_set::{SortedSet, SortedMultiset, BucketList};
 
 ## SortedSet / SortedMultiset
 
-両者は `SortedCollection<T, const MULTI: bool>` の型エイリアスです。
-`MULTI = false` が集合、`true` が多重集合です。
+各型は別々の自己完結した実装です。`src/sorted_set.rs` と `src/sorted_multiset.rs` は、それぞれ単独でコピペして利用できます。
 
 | 操作 | 内容 |
 | --- | --- |
