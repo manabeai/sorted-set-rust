@@ -1,0 +1,18 @@
+name: CI
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - run: cargo +stable fmt --check
+      - run: cargo +stable clippy --all-targets -- -D warnings
+      - run: cargo +stable test --all-targets
+      - run: cargo +stable test --doc
+      - run: cargo +stable run --example basic
+      - run: cargo +stable doc --no-deps
+        env:
+          RUSTDOCFLAGS: -D warnings

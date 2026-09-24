@@ -1,0 +1,10 @@
+[package]
+name = "sorted-set"
+version = "0.1.0"
+edition = "2021"
+license = "Unlicense"
+description = "Bucket-based SortedSet, SortedMultiset and BucketList ported from tatyam-prime/SortedSet"
+repository = "https://github.com/manabeai/sorted-set-rust"
+
+[lib]
+name = "sorted_set"
